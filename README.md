@@ -17,13 +17,13 @@ Se ejecutan en orden; cada uno lee las salidas del anterior.
 | 5 | [5_DL.ipynb](5_DL.ipynb) | Modelos de *deep learning* |
 | 6 | [6_ensemble_diebold_mariano.ipynb](6_ensemble_diebold_mariano.ipynb) | Ensembles y test de Diebold-Mariano |
 | 7 | [7_despliegue.ipynb](7_despliegue.ipynb) | Exportación del modelo y servicio de inferencia |
-| 8 | [8_MLOps_tracking.ipynb](8_MLOps_tracking.ipynb) | Seguimiento con MLflow y monitorización de deriva |
+| 8 | [8_MLOps_tracking.ipynb](8_MLOps_tracking.ipynb) | Registro de experimentos y del modelo en MLflow |
 
 ## Despliegue
 
 - [app.py](app.py): API de inferencia (FastAPI) que sirve el modelo de [modelo_export/](modelo_export/).
 - [streamlit_dashboard.py](streamlit_dashboard.py): cuadro de mando.
-- [evidently_monitor.py](evidently_monitor.py): informe de deriva de datos (ejemplo en [informes/](informes/)).
+- [evidently_monitor.py](evidently_monitor.py): informe de deriva de datos (se genera en local; no se incluye en el repositorio).
 - [Dockerfile](Dockerfile), [Dockerfile.dashboard](Dockerfile.dashboard) y [docker-compose.yml](docker-compose.yml):
 
 ```bash
