@@ -1,0 +1,30 @@
+# Entornos y cachés
+venv/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+
+# Datos en crudo y conjuntos intermedios (versionados con DVC, no se redistribuyen)
+*.dat
+*.nc
+harmonie_crudo.csv
+observaciones_horarias.csv
+dataset_horario.csv
+dataset_modelado.csv
+ref_prueba.csv
+actual_prueba.csv
+
+# Predicciones (contienen las observaciones y el pronóstico de HARMONIE)
+*.parquet
+
+# Modelos de redes y artefactos locales
+*.pt
+mlflow.db
+mlruns/
+mlartifacts/
+
+# Informes de Evidently (se generan a partir de los datos)
+informes/
+
+# Memoria del TFM
+TFT.tex

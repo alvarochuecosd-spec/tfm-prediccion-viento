@@ -1,0 +1,132 @@
+{
+  "ganador": "Transformer",
+  "ventana": 6,
+  "afinado": true,
+  "hiperparametros": {
+    "dim": 64,
+    "cabezas": 2,
+    "capas": 2,
+    "dropout": 0.1051289560506137
+  },
+  "lr": 0.0011808462911388682,
+  "wd": 0.000402635185327836,
+  "n_semillas_ensemble": 3,
+  "comparacion_arquitecturas": [
+    {
+      "arquitectura": "LSTM",
+      "epochs": 22,
+      "val_loss": 0.12609076499938965,
+      "MAE_test": 1.5646812098416996
+    },
+    {
+      "arquitectura": "Transformer",
+      "epochs": 27,
+      "val_loss": 0.12723399698734283,
+      "MAE_test": 1.5843065824091322
+    },
+    {
+      "arquitectura": "GRU",
+      "epochs": 26,
+      "val_loss": 0.12831911444664001,
+      "MAE_test": 1.584937129678098
+    }
+  ],
+  "metricas": [
+    {
+      "H": 1,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 0.7683211776283589,
+      "RMSE": 1.07952214898507,
+      "n_test": 4730
+    },
+    {
+      "H": 2,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 1.1084462391916752,
+      "RMSE": 1.5081241358586441,
+      "n_test": 4722
+    },
+    {
+      "H": 3,
+      "modelo": "Transformer",
+      "ventana": 24,
+      "MAE": 1.280886024339098,
+      "RMSE": 1.7254619714477084,
+      "n_test": 4714
+    },
+    {
+      "H": 4,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 1.353306215160506,
+      "RMSE": 1.838422693949018,
+      "n_test": 4648
+    },
+    {
+      "H": 5,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 1.4257559336796541,
+      "RMSE": 1.9367996714195563,
+      "n_test": 4581
+    },
+    {
+      "H": 6,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 1.4340823992150078,
+      "RMSE": 1.9398642776490596,
+      "n_test": 4514
+    },
+    {
+      "H": 7,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 1.4829839906425786,
+      "RMSE": 1.9904730674849345,
+      "n_test": 4448
+    },
+    {
+      "H": 8,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 1.490757421238048,
+      "RMSE": 2.013365946551559,
+      "n_test": 4381
+    },
+    {
+      "H": 9,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 1.5372778321900704,
+      "RMSE": 2.036800617399485,
+      "n_test": 4315
+    },
+    {
+      "H": 10,
+      "modelo": "Transformer",
+      "ventana": 24,
+      "MAE": 1.530174095282901,
+      "RMSE": 2.0418539482403104,
+      "n_test": 4247
+    },
+    {
+      "H": 11,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 1.5446740579504232,
+      "RMSE": 2.0417436074202597,
+      "n_test": 4180
+    },
+    {
+      "H": 12,
+      "modelo": "Transformer",
+      "ventana": 6,
+      "MAE": 1.5506704023302675,
+      "RMSE": 2.060368794355475,
+      "n_test": 4113
+    }
+  ]
+}

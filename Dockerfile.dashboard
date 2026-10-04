@@ -1,0 +1,19 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir \
+    "streamlit==1.*" "pandas>=2.2,<3.0" "numpy>=1.26,<3.0" "requests==2.*"
+
+COPY streamlit_dashboard.py modelo_produccion.json ./
+
+RUN useradd --create-home --shell /bin/bash servicio && chown -R servicio:servicio /app
+USER servicio
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "streamlit_dashboard.py", \
+     "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]

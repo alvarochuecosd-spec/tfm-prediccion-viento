@@ -1,0 +1,48 @@
+# Levanta la API de predicción, el dashboard HITL y la interfaz de MLflow.
+#
+#   docker compose up --build
+#
+#   API:        http://localhost:8000/docs
+#   Dashboard:  http://localhost:8501
+#   MLflow UI:  http://localhost:5050
+
+services:
+  api:
+    build: .
+    container_name: viento-api
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: viento-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      # Dentro de la red de compose los servicios se resuelven por su nombre.
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    volumes:
+      # Solo lectura: el dashboard consulta el dataset para autocompletar features,
+      # nunca lo modifica.
+      - ./dataset_modelado.csv:/app/dataset_modelado.csv:ro
+      - ./harmonie_crudo.csv:/app/harmonie_crudo.csv:ro
+    restart: unless-stopped
+
+  mlflow-ui:
+    image: python:3.12-slim
+    container_name: mlflow-ui
+    working_dir: /app
+    volumes:
+      - ./mlflow.db:/app/mlflow.db
+      - ./mlruns:/app/mlruns
+    ports:
+      - "5050:5000"
+    command: >
+      bash -c "pip install --no-cache-dir 'mlflow==3.*' &&
+               mlflow ui --backend-store-uri sqlite:///mlflow.db --host 0.0.0.0 --port 5000"
+    restart: unless-stopped

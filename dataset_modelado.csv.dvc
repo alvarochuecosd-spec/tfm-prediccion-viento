@@ -1,0 +1,5 @@
+outs:
+- md5: 0b5c25698e24a581a2589a760fe99491
+  size: 5926742
+  hash: md5
+  path: dataset_modelado.csv

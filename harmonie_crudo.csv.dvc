@@ -1,0 +1,5 @@
+outs:
+- md5: 9a4721272e4dd2d2c499cf7ee6826577
+  size: 27248625
+  hash: md5
+  path: harmonie_crudo.csv

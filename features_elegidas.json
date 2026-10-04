@@ -1,0 +1,68 @@
+{
+  "conjunto": "B",
+  "motivo": "ninguna ampliación sobre B supera el umbral del 1.0% de forma consistente entre particiones; se conserva B. Mejores MAE medios: E (+0.88%), F (+0.86%), G (+0.57%)",
+  "features_sin_lags": [
+    "hora_sin",
+    "hora_cos",
+    "dia_sin",
+    "dia_cos",
+    "H_vel",
+    "H_dir_sin",
+    "H_dir_cos",
+    "H_lead"
+  ],
+  "ventana_lags": 24,
+  "referencia": "B",
+  "umbral_mejora_%": 1.0,
+  "mae_por_conjunto": {
+    "bruto": 2.6693720351881676,
+    "A": 2.465471780596083,
+    "B": 1.430601262756625,
+    "C": 1.425778384315722,
+    "D": 1.4994870173658634,
+    "E": 1.4179513766386764,
+    "F": 1.4182449360298597,
+    "G": 1.4224576179866297
+  },
+  "mejora_vs_referencia_%": {
+    "A": -72.33815213089959,
+    "B": 0.0,
+    "C": 0.3371224789505504,
+    "D": -4.815161037709598,
+    "E": 0.8842356320567916,
+    "F": 0.8637156312133984,
+    "G": 0.5692463009785969
+  },
+  "consistencia_entre_particiones": {
+    "B->C": {
+      "victorias_medias": 2.25,
+      "folds": 5,
+      "horizontes_5de5": 0,
+      "horizontes": 12
+    },
+    "C->D": {
+      "victorias_medias": 1.3333333333333333,
+      "folds": 5,
+      "horizontes_5de5": 0,
+      "horizontes": 12
+    },
+    "C->E": {
+      "victorias_medias": 3.3333333333333335,
+      "folds": 5,
+      "horizontes_5de5": 2,
+      "horizontes": 12
+    },
+    "E->F": {
+      "victorias_medias": 3.0,
+      "folds": 5,
+      "horizontes_5de5": 0,
+      "horizontes": 12
+    },
+    "F->G": {
+      "victorias_medias": 2.4166666666666665,
+      "folds": 5,
+      "horizontes_5de5": 0,
+      "horizontes": 12
+    }
+  }
+}
