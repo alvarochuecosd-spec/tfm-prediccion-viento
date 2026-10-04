@@ -41,8 +41,13 @@ pip install -r requirements-entrenamiento.txt   # notebooks
 
 ## Datos
 
-Los datos en crudo (observaciones horarias y salidas de HARMONIE-AROME) y los datasets intermedios
-**no se incluyen** en el repositorio. Están versionados con DVC (ficheros `*.dvc`, ver
-[dvc_setup.md](dvc_setup.md)). Sí se incluyen los resultados necesarios para revisar el trabajo:
-predicciones (`*.parquet`), métricas (`*.csv`), configuraciones de los mejores modelos (`*.json`)
-y figuras ([figuras/](figuras/)).
+Los datos en crudo (observaciones de la estación y salidas de HARMONIE-AROME), los conjuntos
+intermedios y las predicciones (`*.parquet`, que contienen las observaciones) **no se incluyen**
+en el repositorio, ya que se han utilizado con permiso de sus propietarios. Están versionados con
+DVC (ficheros `*.dvc`, ver [dvc_setup.md](dvc_setup.md)). Sí se incluyen las métricas (`*.csv`),
+las configuraciones de los mejores modelos (`*.json`), las figuras que generan los notebooks
+([figuras/](figuras/)) y las figuras empleadas en la memoria ([imgs/](imgs/)).
+
+Sin los datos, el servicio que arranca completo es la API (`docker compose up --build api`): el
+panel necesita `dataset_modelado.csv` y `harmonie_crudo.csv` para reconstruir las variables desde
+el histórico, y la interfaz de MLflow necesita `mlflow.db`.
