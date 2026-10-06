@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
@@ -42,6 +43,25 @@ from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("viento-api")
+
+# Registro opcional de las peticiones atendidas (variables de entrada + predicción). Es la
+# fuente del periodo "actual" que compara evidently_monitor.py con el conjunto de
+# entrenamiento. Se activa definiendo REGISTRO_PREDICCIONES con la ruta del CSV.
+REGISTRO_PREDICCIONES = os.environ.get("REGISTRO_PREDICCIONES")
+
+
+def _registrar_prediccion(features: dict[str, float], pred: float, ts_objetivo: str | None) -> None:
+    if not REGISTRO_PREDICCIONES:
+        return
+    try:
+        ruta = Path(REGISTRO_PREDICCIONES)
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        fila = {"ts_prediccion": datetime.now(timezone.utc).isoformat(),
+                "ts_objetivo": ts_objetivo, **features, "prediccion": pred}
+        pd.DataFrame([fila]).to_csv(ruta, mode="a", header=not ruta.exists(), index=False)
+    except Exception:
+        # Un fallo del registro nunca debe impedir servir la predicción.
+        logger.exception("No se pudo registrar la predicción en %s", REGISTRO_PREDICCIONES)
 
 RUTA = Path(__file__).parent
 CONFIG_PATH = RUTA / "modelo_produccion.json"
@@ -107,10 +127,10 @@ class EntradaPrediccion(BaseModel):
         ...,
         description="Diccionario feature -> valor. Debe incluir todas las features del modelo.",
         examples=[{
-            "lag12": 6.2, "lag13": 5.9, "lag14": 6.5, "lag15": 6.8, "lag16": 7.1, "lag17": 7.0,
-            "hora_sin": 0.5, "hora_cos": 0.87, "dia_sin": 0.3, "dia_cos": 0.95,
-            "H_vel": 8.5, "H_dir_sin": 0.98, "H_dir_cos": -0.17, "H_lead": 16,
-            "lag_media": 6.58, "lag_std": 0.45, "lag_tend": -0.8,
+            "lag12": 11.8, "lag13": 11.5, "lag14": 11.9, "lag15": 12.4, "lag16": 12.1, "lag17": 11.6,
+            "lag18": 11.0, "lag19": 10.7, "lag20": 10.9, "lag21": 10.4, "lag22": 9.8, "lag23": 9.5,
+            "hora_sin": 0.5, "hora_cos": -0.87, "dia_sin": 0.6, "dia_cos": -0.8, "H_vel": 9.6, "H_dir_sin": 0.94,
+            "H_dir_cos": 0.34, "H_lead": 17, "lag_media": 11.13, "lag_std": 0.91, "lag_tend": 2.3,
         }],
     )
     ts_objetivo: str | None = Field(
@@ -187,6 +207,7 @@ def predecir(entrada: EntradaPrediccion) -> SalidaPrediccion:
         )
         pred = 0.0
 
+    _registrar_prediccion(entrada.features, pred, entrada.ts_objetivo)
     return SalidaPrediccion(
         velocidad_predicha_m_s=round(pred, 3),
         activar_seguridad=pred >= _estado["umbral"],

@@ -45,6 +45,6 @@
   "n_arboles": 65,
   "mae_test": 1.5207194213923496,
   "n_test": 4065,
-  "fecha_registro": "2026-10-02T13:52:57.278809",
+  "fecha_registro": "2026-10-06T18:54:04.041821",
   "mlflow_tracking_uri": "sqlite:///mlflow.db"
 }

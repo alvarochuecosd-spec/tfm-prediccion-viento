@@ -1,21 +1,25 @@
 """
 Monitorización de deriva del modelo — predicción de viento, Tarifa.
 
-Compara la distribución de las features y del error del modelo entre un periodo de
-referencia (los datos con los que se entrenó/evaluó, p.ej. el conjunto de test del
-notebook 4b) y un periodo "actual" (las predicciones más recientes en producción).
+Compara la distribución de las variables de entrada del modelo entre un periodo de
+referencia (el conjunto de entrenamiento del modelo desplegado) y un periodo "actual"
+(las peticiones recibidas en producción, que app.py registra en un CSV si se define la
+variable de entorno REGISTRO_PREDICCIONES).
 
 Pensado para ejecutarse periódicamente (cron, tarea programada), no de forma interactiva.
 No es un notebook porque un proceso de monitorización continua no tiene "una ejecución
 con una salida"; tiene ejecuciones repetidas que se acumulan en un histórico de alertas.
 
 Uso:
-    python evidently_monitor.py --referencia dataset_modelado.csv \
-        --actual predicciones_recientes.csv --salida informes/
+    python evidently_monitor.py --actual registro/predicciones_recientes.csv --salida informes/
+
+Si no se indica --referencia, se reconstruye el conjunto de entrenamiento del modelo
+desplegado a partir de dataset_modelado.csv y harmonie_crudo.csv, con la misma
+construcción que el notebook 7 (primer 60 % de los datos).
 
 Programación con cron (ejemplo, cada día a las 06:00):
     0 6 * * * cd /ruta/al/proyecto && python evidently_monitor.py \
-        --referencia dataset_modelado.csv --actual /var/log/viento/ultimas_24h.csv \
+        --actual registro/predicciones_recientes.csv \
         --salida informes/ >> logs/monitor.log 2>&1
 """
 from __future__ import annotations
@@ -28,6 +32,7 @@ from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from evidently import Report, Dataset, DataDefinition
@@ -57,6 +62,43 @@ def cargar(ruta: Path, columnas: list[str]) -> pd.DataFrame:
     if faltan:
         logger.warning("Columnas ausentes en %s (se omiten): %s", ruta, faltan)
     return df[disponibles].dropna()
+
+
+def construir_referencia(ruta: Path = Path(".")) -> pd.DataFrame:
+    """
+    Conjunto de entrenamiento del modelo desplegado (primer 60 % de los datos), con las
+    mismas variables y la misma construcción que construir_dataset() del notebook 7.
+    """
+    prod = json.loads((ruta / "modelo_produccion.json").read_text())
+    H, W = int(prod["horizonte_h"]), int(prod["ventana"])
+    L = int(prod.get("latencia_harmonie_h", 4))
+
+    crudo = pd.read_csv(ruta / "harmonie_crudo.csv",
+                        usecols=["valida", "pasada", "lead", "WSPE", "WSPN"],
+                        parse_dates=["valida", "pasada"])
+    apto = crudo[crudo["lead"] >= H + L].sort_values(["valida", "pasada"])
+    oper = apto.groupby("valida").last()
+    direccion = (np.degrees(np.arctan2(-oper["WSPE"], -oper["WSPN"])) + 360) % 360
+    harm = pd.DataFrame({
+        "H_vel": np.hypot(oper["WSPE"], oper["WSPN"]),
+        "H_lead": oper["lead"],
+        "H_dir_sin": np.sin(np.radians(direccion)),
+        "H_dir_cos": np.cos(np.radians(direccion)),
+    })
+    harm.index.name = "ts"
+
+    base = pd.read_csv(ruta / "dataset_modelado.csv", index_col="ts", parse_dates=["ts"])
+    d = (base.drop(columns=[c for c in base.columns if c.startswith("H_")], errors="ignore")
+             .join(harm, how="inner"))
+    g = d.groupby("tramo")
+    lags = [f"lag{k}" for k in range(H, H + W)]
+    for k in range(H, H + W):
+        d[f"lag{k}"] = g["obs_vel"].shift(k)
+    d["lag_media"] = d[lags].mean(axis=1)
+    d["lag_std"] = d[lags].std(axis=1)
+    d["lag_tend"] = d[lags[0]] - d[lags[-1]]
+    d = d.dropna(subset=prod["features"] + ["obs_vel"])
+    return d.iloc[: int(len(d) * 0.6)]
 
 
 def generar_informe(ref: pd.DataFrame, actual: pd.DataFrame) -> tuple[Report, dict]:
@@ -118,8 +160,9 @@ def notificar(resumen: dict, destino_email: str | None) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--referencia", type=Path, required=True,
-                    help="CSV con los datos de referencia (p.ej. test del notebook 4b)")
+    ap.add_argument("--referencia", type=Path, default=None,
+                    help="CSV con los datos de referencia. Si se omite, se reconstruye el "
+                         "conjunto de entrenamiento del modelo desplegado")
     ap.add_argument("--actual", type=Path, required=True,
                     help="CSV con los datos recientes a comparar")
     ap.add_argument("--salida", type=Path, default=Path("informes_deriva"),
@@ -131,8 +174,13 @@ def main() -> None:
     args.salida.mkdir(parents=True, exist_ok=True)
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 
-    logger.info("Cargando referencia: %s", args.referencia)
-    ref = cargar(args.referencia, COLUMNAS_NUMERICAS)
+    if args.referencia is None:
+        logger.info("Reconstruyendo la referencia: conjunto de entrenamiento del modelo desplegado")
+        ref = construir_referencia()
+        ref = ref[[c for c in COLUMNAS_NUMERICAS if c in ref.columns]].dropna()
+    else:
+        logger.info("Cargando referencia: %s", args.referencia)
+        ref = cargar(args.referencia, COLUMNAS_NUMERICAS)
     logger.info("Cargando actual: %s", args.actual)
     actual = cargar(args.actual, COLUMNAS_NUMERICAS)
 
@@ -154,7 +202,7 @@ def main() -> None:
 
     logger.info("Informe guardado: %s", ruta_html)
     logger.info("Resumen: %d/%d columnas con deriva (%.0f%%)",
-               resumen.get("n_columnas_derivadas", 0), len(ref.columns),
+               resumen.get("n_columnas_derivadas", 0), len(ref.columns.intersection(actual.columns)),
                (resumen["share_global"] or 0) * 100)
 
     if resumen["alerta"]:

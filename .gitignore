@@ -28,3 +28,7 @@ informes/
 
 # Memoria del TFM
 TFT.tex
+
+# Registro de peticiones de la API (contiene datos de producción)
+registro/
+informes_deriva/

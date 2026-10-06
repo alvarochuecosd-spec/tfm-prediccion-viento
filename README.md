@@ -4,6 +4,9 @@ Código del Trabajo Fin de Máster. Compara modelos estadísticos (SARIMA), de *
 y de *deep learning* para predecir la velocidad del viento horaria con horizontes de 1 a 12 horas,
 usando como exógena la predicción numérica HARMONIE-AROME, y despliega el mejor modelo como servicio.
 
+La etiqueta [`v1.0`](https://github.com/alvarochuecosd-spec/tfm-prediccion-viento/tree/v1.0)
+corresponde a la versión del código descrita en la memoria (Anexo C).
+
 ## Notebooks
 
 Se ejecutan en orden; cada uno lee las salidas del anterior.
@@ -22,8 +25,16 @@ Se ejecutan en orden; cada uno lee las salidas del anterior.
 ## Despliegue
 
 - [app.py](app.py): API de inferencia (FastAPI) que sirve el modelo de [modelo_export/](modelo_export/).
-- [streamlit_dashboard.py](streamlit_dashboard.py): cuadro de mando.
+- [streamlit_dashboard.py](streamlit_dashboard.py): panel de decisión *Human-in-the-loop*, que pide
+  las predicciones a la API.
 - [evidently_monitor.py](evidently_monitor.py): informe de deriva de datos (se genera en local; no se incluye en el repositorio).
+  Compara las peticiones recibidas por la API con el conjunto de entrenamiento del modelo desplegado.
+  La API guarda cada petición en un CSV si se define la variable de entorno `REGISTRO_PREDICCIONES`:
+
+  ```bash
+  REGISTRO_PREDICCIONES=registro/predicciones_recientes.csv uvicorn app:app --port 8000
+  python evidently_monitor.py --actual registro/predicciones_recientes.csv --salida informes/
+  ```
 - [Dockerfile](Dockerfile), [Dockerfile.dashboard](Dockerfile.dashboard) y [docker-compose.yml](docker-compose.yml):
 
 ```bash
@@ -35,7 +46,7 @@ docker compose up --build
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install -r requirements-entrenamiento.txt   # notebooks
+pip install -r requirements-entrenamiento.txt   # notebooks (ejecutados con Python 3.14)
 # o solo: pip install -r requirements.txt       # servicio de inferencia
 ```
 

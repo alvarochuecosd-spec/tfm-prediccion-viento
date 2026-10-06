@@ -57,19 +57,43 @@ TEXTO = {
 
 
 @st.cache_data(ttl=600)
-def cargar_contexto() -> pd.DataFrame | None:
-    """Dataset histórico, solo para autocompletar features de una hora concreta."""
-    if not DATASET.exists():
+def cargar_contexto(H: int, L: int) -> pd.DataFrame | None:
+    """
+    Histórico para autocompletar las features de una hora concreta.
+
+    Las variables de HARMONIE-AROME se toman de la pasada disponible en el instante de
+    decisión t-H (lead >= H + L, Ecuación 3.1 de la memoria), igual que construir_dataset()
+    del notebook 7. Las columnas H_* de dataset_modelado.csv no sirven aquí: proceden de la
+    pasada más reciente con lead >= L, sin tener en cuenta el horizonte.
+    """
+    if not (DATASET.exists() and CRUDO.exists()):
         return None
-    return pd.read_csv(DATASET, index_col="ts", parse_dates=["ts"])
+    crudo = pd.read_csv(CRUDO, usecols=["valida", "pasada", "lead", "WSPE", "WSPN"],
+                        parse_dates=["valida", "pasada"])
+    apto = crudo[crudo["lead"] >= H + L].sort_values(["valida", "pasada"])
+    oper = apto.groupby("valida").last()
+    direccion = (np.degrees(np.arctan2(-oper["WSPE"], -oper["WSPN"])) + 360) % 360
+    harm = pd.DataFrame({
+        "H_vel": np.hypot(oper["WSPE"], oper["WSPN"]),
+        "H_lead": oper["lead"],
+        "H_dir_sin": np.sin(np.radians(direccion)),
+        "H_dir_cos": np.cos(np.radians(direccion)),
+    })
+    harm.index.name = "ts"
+
+    base = pd.read_csv(DATASET, index_col="ts", parse_dates=["ts"])
+    base = base.drop(columns=[c for c in base.columns if c.startswith("H_")], errors="ignore")
+    return base.join(harm, how="inner")
 
 
-def autocompletar(ts_str: str, features: list[str], H: int, W: int) -> dict | None:
+def autocompletar(ts_str: str, features: list[str], H: int, W: int, L: int = 4) -> dict | None:
     """
-    Reconstruye las features de una hora del histórico. Replica la lógica del
-    notebook 8: lags que terminan en t-H, más agregados de tendencia.
+    Reconstruye las features de una hora del histórico con la misma lógica que
+    construir_dataset() de los notebooks 4 y 7: lags que terminan en t-H, pronóstico de
+    HARMONIE-AROME de la pasada disponible en el instante de decisión y agregados de la
+    ventana.
     """
-    d = cargar_contexto()
+    d = cargar_contexto(H, L)
     if d is None:
         return None
     try:
@@ -103,7 +127,7 @@ def autocompletar(ts_str: str, features: list[str], H: int, W: int) -> dict | No
 
     arr = np.array(ventana)
     vals["lag_media"] = float(arr.mean())
-    vals["lag_std"] = float(arr.std())
+    vals["lag_std"] = float(arr.std(ddof=1))   # ddof=1, como pandas .std() en el notebook 7
     vals["lag_tend"] = float(arr[0] - arr[-1])
 
     faltan = [f for f in features if f not in vals]
@@ -161,6 +185,7 @@ def main() -> None:
     features = cfg.get("features", [])
     H = int(salud.get("horizonte_h", 12))
     W = int(cfg.get("ventana", 12))
+    L = int(cfg.get("latencia_harmonie_h", 4))
 
     tab_pred, tab_hist = st.tabs(["Predicción", "Histórico de decisiones"])
 
@@ -177,16 +202,16 @@ def main() -> None:
             ts_obj = None
 
             if modo == "Hora del histórico":
-                d = cargar_contexto()
+                d = cargar_contexto(H, L)
                 if d is None:
-                    st.warning("No se encuentra dataset_modelado.csv para autocompletar.")
+                    st.warning("No se encuentran dataset_modelado.csv y harmonie_crudo.csv para autocompletar.")
                 else:
                     ts_sel = st.selectbox(
                         "Hora objetivo",
                         options=[str(x) for x in d.index[-500:][::-1]],
                         help="Se reconstruyen las features de esa hora igual que en entrenamiento.",
                     )
-                    entrada = autocompletar(ts_sel, features, H, W)
+                    entrada = autocompletar(ts_sel, features, H, W, L)
                     ts_obj = ts_sel
                     if entrada is None:
                         st.warning("No hay suficiente historia previa para esa hora.")
@@ -194,11 +219,11 @@ def main() -> None:
                         with st.expander("Ver features reconstruidas"):
                             st.dataframe(
                                 pd.Series(entrada, name="valor").to_frame().round(4),
-                                use_container_width=True,
+                                width="stretch",
                             )
             else:
                 st.caption("Valores principales; el resto se completa con la mediana histórica.")
-                d = cargar_contexto()
+                d = cargar_contexto(H, L)
                 base_vals = {}
                 if d is not None:
                     for f in features:
@@ -242,7 +267,7 @@ def main() -> None:
             st.subheader("2. Resultado")
             if entrada is None:
                 st.info("Selecciona o introduce los datos de entrada.")
-            elif st.button("Predecir", type="primary", use_container_width=True):
+            elif st.button("Predecir", type="primary", width="stretch"):
                 try:
                     r = requests.post(f"{api_url}/predecir",
                                       json={"features": entrada, "ts_objetivo": ts_obj},
@@ -286,7 +311,7 @@ def main() -> None:
                                       ["Activar protocolo", "No activar", "Aplazar"],
                                       horizontal=True)
                     nota = st.text_input("Justificación (opcional)")
-                    if st.form_submit_button("Registrar decisión", use_container_width=True):
+                    if st.form_submit_button("Registrar decisión", width="stretch"):
                         registrar({
                             "ts_decision": datetime.now(timezone.utc).isoformat(),
                             "ts_objetivo": u["ts_obj"],
@@ -318,7 +343,7 @@ def main() -> None:
             if "coincide_con_sistema" in log.columns:
                 ac = log.coincide_con_sistema.sum()
                 c3.metric("Operador de acuerdo", f"{ac} ({100*ac/len(log):.0f}%)")
-            st.dataframe(log.iloc[::-1], use_container_width=True)
+            st.dataframe(log.iloc[::-1], width="stretch")
             st.download_button("Descargar CSV", log.to_csv(index=False),
                                "decisiones_hitl.csv", "text/csv")
             st.caption(

@@ -1,23 +1,24 @@
-# Dependencias para ejecutar los notebooks 1-8 (entrenamiento y análisis).
+# Dependencias para ejecutar los notebooks 1-8 (entrenamiento y análisis), con Python 3.14.
 # Las del servicio de inferencia están en requirements.txt.
-numpy==1.26.4
+fastapi==0.141.1
+joblib==1.5.3
+lightgbm==4.7.0
+matplotlib==3.10.8
+mlflow==3.15.2
+numpy==2.4.4
+optuna==4.9.0
 pandas==2.3.3
 pyarrow==25.0.1
+pydantic==2.13.4
+requests==2.34.1
+scikit-learn==1.8.0
 scipy==1.17.1
-scikit-learn==1.9.0
-statsmodels==0.15.0
-xgboost==2.1.4
-lightgbm
-torch
-optuna
-matplotlib
-mlflow
-evidently==0.7.21
+shap==0.52.0
+statsmodels==0.14.6
 streamlit==1.63.0
-fastapi==0.115.14
-uvicorn==0.32.1
-pydantic==2.13.5
-joblib==1.6.0
-requests==2.34.2
+torch==2.12.0
+uvicorn==0.52.4
+xgboost==3.2.0
+ipykernel==7.2.0
+evidently==0.7.23
 dvc==3.67.1
-jupyter

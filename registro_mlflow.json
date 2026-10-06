@@ -2,8 +2,8 @@
   "modelo_registrado": "viento_tarifa_h12",
   "version": 1,
   "alias": "champion",
-  "run_id": "a838dd9138a6408da04437a52ad08e12",
+  "run_id": "48aa16d3a6c74eaea9ae525ae30d669c",
   "horizonte_h": 12,
   "mae_test": 1.5207194213923496,
-  "fecha_registro_mlflow": "2026-10-02T13:53:05.334035"
+  "fecha_registro_mlflow": "2026-10-06T18:54:10.407008"
 }
